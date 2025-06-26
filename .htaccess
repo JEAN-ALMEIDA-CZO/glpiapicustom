@@ -1,0 +1,10 @@
+
+PassengerAppRoot "/home/seu_usuario_cpanel/public_html/glpiapi"
+PassengerBaseURI "/glpiapi"
+PassengerPython "/home/seu_usuario_cpanel/virtualenv/public_html/glpiapi/3.9/bin/python"
+PassengerEnabled On
+
+RewriteEngine On
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ passenger_wsgi.py/$1 [QSA,PT,L]
