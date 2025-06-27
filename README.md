@@ -4,10 +4,10 @@ Este projeto implementa uma pequena API RESTful usando Flask que interage com a 
 
 ## **🌟 Funcionalidades**
 
-* **Início e Fim de Sessão:** Gerencia o ciclo de vida da sessão com a API do GLPI usando App-Token e User-Token.  
-* **Busca de Entidade por CNPJ:** Localiza entidades (empresas/clientes) no GLPI usando um campo personalizado de CNPJ.  
-* **Criação de Chamados:** Abre novos chamados no GLPI com informações detalhadas do cliente e do problema.  
-* **Endpoint de Verificação (/ping):** Permite verificar se a aplicação está no ar.  
+* **Início e Fim de Sessão:** Gerencia o ciclo de vida da sessão com a API do GLPI usando App-Token e User-Token.
+* **Busca de Entidade por CNPJ:** Localiza entidades (empresas/clientes) no GLPI usando um campo personalizado de CNPJ.
+* **Criação de Chamados:** Abre novos chamados no GLPI com informações detalhadas do cliente e do problema.
+* **Endpoint de Verificação (/ping):** Permite verificar se a aplicação está no ar.
 * **Endpoint de Depuração (/debug):** Ajuda a testar o tratamento de erros.
 
 ## **🚀 Como Usar**
@@ -16,176 +16,176 @@ Este projeto implementa uma pequena API RESTful usando Flask que interage com a 
 
 Antes de começar, certifique-se de ter o seguinte instalado:
 
-* **Python 3.x**  
+* **Python 3.x**
 * **pip** (gerenciador de pacotes do Python)
 
-### **1\. Configuração do Ambiente**
+### **1. Configuração do Ambiente**
 
-1. **Clone o Repositório:** (Assumindo que este código estará em um repositório Git)
+1. **Clone o Repositório:**
 
+```bash
 git clone https://github.com/JEAN-ALMEIDA-CZO/glpiapicustom.git
+cd glpiapicustom
+```
 
-2. Crie e Ative um Ambiente Virtual (Recomendado):  
-   Isso isola as dependências do seu projeto.
-    
-   python \-m venv venv  
-   \# No Windows:  
-   .\\venv\\Scripts\\activate  
-   \# No macOS/Linux:  
-   source venv/bin/activate
+2. **Crie e Ative um Ambiente Virtual (Recomendado):**
 
-4. **Instale as Dependências:**  
-   pip install Flask requests
+```bash
+python -m venv venv
+# No Windows:
+venv\Scripts\activate
+# No macOS/Linux:
+source venv/bin/activate
+```
 
-### **2\. Configuração do GLPI**
+3. **Instale as Dependências:**
 
-Para que a integração funcione, você precisa configurar seu GLPI:
+```bash
+pip install Flask requests
+```
 
-1. **Habilitar a API REST:**  
-   * Vá em Configurar \> Geral \> API.  
-   * Crie e ative a API REST.  
-   * Anote o **App-Token** que será gerado ou crie um novo.  
-2. **Criar um Usuário para API:**  
-   * Crie um usuário no GLPI que será usado exclusivamente pela API.  
-   * Vá em Administração \> Usuários \> Clique no usuário \> Aba Tokens de API.  
-   * Crie um **Personal Access Token (User-Token)** para este usuário. Anote-o.  
-3. **Campo Personalizado de CNPJ na Entidade:**   
-4. **( requer plugin “Campos Adicionais” )**  
-   * O código assume que você tem um campo personalizado para o CNPJ nas entidades do GLPI.  
-   * Vá em Configurar \> Campos Adicionais.  
-   * Crie um campo do tipo "Texto" com o rótulo "CNPJ" ou similar.  
-     * \* Configure este campo para ser exibido nas entidades. 
+### **2. Configuração do GLPI**
 
-   (conforme a imagem [Configuração campo CNPJ](https://github.com/JEAN-ALMEIDA-CZO/glpiapicustom/blob/ipad/Configura%C3%A7%C3%A3o%20campo%20CNPJ%20no%20cadastro%20de%20entidades.png) )
+1. **Habilitar a API REST:** Vá em Configurar > Geral > API, ative a API REST e gere o App-Token.
 
-     * **Crucial:** Para a função buscar\_entidade\_por\_cnpj funcionar, você precisa do **ID numérico** deste campo personalizado.  
-     * Para descobrir o ID, você pode fazer uma chamada GET para https://seusite.com.br/apirest.php/listSearchOptions/Ticket. Procure pelo nome do seu campo CNPJ na resposta e obtenha o ID associado (conforme a imagem [Buscar Campo CNPJ PERSONALIZADO](https://github.com/JEAN-ALMEIDA-CZO/glpiapicustom/blob/ipad/Buscar%20Campo%20CNPJ%20PERSONALIZADO.png) )
+2. **Criar um Usuário para API:** Crie um usuário no GLPI, vá até a aba de Tokens de API e gere um User-Token.
 
-     
-       \* Preencha o campo CNPJ no cadastro de suas entidades (clientes) no GLPI. 
+3. **Campo Personalizado de CNPJ (Requer plugin “Campos Adicionais”):**
 
-   (conforme a imagem [Cadastro de CNPJ Formatado](https://github.com/JEAN-ALMEIDA-CZO/glpiapicustom/blob/ipad/Cadastro%20de%20CNPJ%20Formatado%20Empresa.png) )
+   * Vá em Configurar > Campos Adicionais e crie um campo do tipo "Texto" com o rótulo "CNPJ".
+   * Configure o campo para aparecer nas entidades e preencha com os CNPJs correspondentes.
+   * Descubra o **ID do campo** via chamada:
 
-5. **Configurar Categorias, Usuários e Origens de Requisição:**  
-   * Certifique-se de que os IDs para itilcategories\_id, users\_id\_recipient, users\_id, \_users\_id\_requester, requestsources\_id e requesttypes\_id no corpo da requisição de criação de chamado (app.py) correspondem a IDs válidos no seu GLPI. Você pode ajustá-los conforme sua necessidade.
+```http
+GET https://seusite.com.br/apirest.php/listSearchOptions/Ticket
+```
 
-### **3\. Configuração do app.py**
+* Use esse ID na função de busca por CNPJ.
 
-Abra o arquivo app.py e preencha as seguintes variáveis:
+#### Exemplos ilustrativos:
 
-GLPI\_URL \= "http://seusite.com.br/apirest.php" \# \<-- Mude para a URL da sua instalação GLPI  
-APP\_TOKEN \= ""  \# \<-- Insira seu App-Token do GLPI  
-USER\_TOKEN \= "" \# \<-- Insira seu User-Token do GLPI
+* Configuração visual do campo "CNPJ" na entidade:
+  ![Campo CNPJ](https://github.com/JEAN-ALMEIDA-CZO/glpiapicustom/blob/ipad/Configura%C3%A7%C3%A3o%20campo%20CNPJ%20no%20cadastro%20de%20entidades.png)
+* Localização do ID via `listSearchOptions`:
+  ![Buscar ID do Campo](https://github.com/JEAN-ALMEIDA-CZO/glpiapicustom/blob/ipad/Buscar%20Campo%20CNPJ%20PERSONALIZADO.png)
+* Exemplo de entidade com CNPJ preenchido:
+  ![Entidade com CNPJ](https://github.com/JEAN-ALMEIDA-CZO/glpiapicustom/blob/ipad/Cadastro%20de%20CNPJ%20Formatado%20Empresa.png)
 
-\# Na função 'buscar\_entidade\_por\_cnpj', altere o ID do campo personalizado:  
-\# "criteria\[0\]\[field\]": 76674, \# \<-- Altere este ID para o ID do seu campo CNPJ no GLPI
+4. **IDs de Categoria, Usuário e Origem:** Certifique-se de usar valores válidos nos campos `itilcategories_id`, `users_id_recipient`, `requestsources_id` e similares.
 
-\# Na função 'criar\_chamado', ajuste o ID da categoria padrão e do usuário requerente/destinatário:  
-\# categoria\_id \= dados.get("categoria", "18") \# \<-- Defina a categoria padrão aqui (o ID do meu caso é 18\)  
-\# "users\_id\_recipient": 36, \# \<-- Crie um usuário para identificar o requerente (o ID do meu caso é 36\)  
-\# "users\_id": 36,  
-\# "\_users\_id\_requester": 36,  
-\# "requestsources\_id": 5, \# \<-- ID da origem de requisição  
-\# "requesttypes\_id": 5 \# \<-- ID do tipo de requisição
+### **3. Configuração do app.py**
 
-### **4\. Executar a Aplicação Flask**
+Abra o arquivo `app.py` e preencha:
 
-No terminal, com o ambiente virtual ativado:
+```python
+GLPI_URL = "http://seusite.com.br/apirest.php"
+APP_TOKEN = ""
+USER_TOKEN = ""
+```
 
+Na função `buscar_entidade_por_cnpj`, altere:
+
+```python
+"criteria[0][field]": 76674  # ID do campo personalizado de CNPJ
+```
+
+Na função `criar_chamado`, ajuste os IDs conforme sua estrutura:
+
+```python
+categoria_id = dados.get("categoria", "18")
+"users_id_recipient": 36,
+"users_id": 36,
+"_users_id_requester": 36,
+"requestsources_id": 5,
+"requesttypes_id": 5
+```
+
+### **4. Executar a Aplicação Flask**
+
+Com ambiente virtual ativado:
+
+```bash
 python app.py
+```
 
-A aplicação será iniciada, geralmente em http://127.0.0.1:5000.
+A aplicação será iniciada em `http://127.0.0.1:5000`.
 
-### **5\. Testando os Endpoints**
+### **5. Testando os Endpoints**
 
-Você pode usar ferramentas como Postman, Insomnia ou curl para testar sua API.
+#### **5.1. Verificar o Status**
 
-#### **5.1. Verificar o Status da Aplicação**
-
-* **Endpoint:** /ping  
-* **Método:** GET  
-* **URL:** http://127.0.0.1:5000/ping  
-* **Resposta Esperada:** App Flask está ativo\! (Status 200 OK)
+* **Endpoint:** `/ping`
+* **Método:** GET
+* **Resposta:** `App Flask está ativo!`
 
 #### **5.2. Criar um Chamado**
 
-* **Endpoint:** /criar-chamado  
-* **Método:** POST  
-* **URL:** http://127.0.0.1:5000/criar-chamado  
-* **Content-Type:** application/json  
-* **Corpo (Body) da Requisição (JSON):**  
-  
-  {  
-      "nome\_cliente": "Fulano de Tal",  
-      "telefone\_cliente": "5511987654321",  
-      "cnpj\_cliente": "00.000.000/0001-00",  
-      "anydesk\_cliente": "123 456 789",  
-      "descricao\_problema": "Problema com lentidão no sistema X",  
-      "categoria": "18"  
-  }
+* **Endpoint:** `/criar-chamado`
+* **Método:** POST
+* **Content-Type:** `application/json`
+* **Exemplo de corpo da requisição:**
 
-  * **cnpj\_cliente**: **Muito Importante\!** Deve ser um CNPJ válido e **cadastrado em uma entidade no seu GLPI**, no campo personalizado que você configurou. Se o CNPJ não for encontrado, o chamado não será criado.  
-  * **categoria (opcional)**: Se omitido, usará o valor padrão definido no app.py (18 no exemplo).  
-* **Resposta Esperada em caso de sucesso:**  
-  {  
-      "ticket\_id": 1234  
-  }
+```json
+{
+  "nome_cliente": "Fulano de Tal",
+  "telefone_cliente": "5511987654321",
+  "cnpj_cliente": "00.000.000/0001-00",
+  "anydesk_cliente": "123 456 789",
+  "descricao_problema": "Problema com lentidão no sistema X",
+  "categoria": "18"
+}
+```
 
-  (Onde 1234 é o ID do chamado recém-criado no GLPI).  
-* **Respostas de Erro:**  
-  * **400 Bad Request:** {"erro": "Campos obrigatórios ausentes", ...} se faltar algum campo no JSON.  
-  * **401 Unauthorized:** {"erro": "Falha ao iniciar sessão"} se os tokens do GLPI estiverem incorretos ou a API não estiver acessível.  
-  * **404 Not Found:** {"erro": "Entidade não encontrada para o CNPJ informado"} se o CNPJ não corresponder a nenhuma entidade no GLPI.  
-  * **Outros Erros HTTP:** {"erro": "Erro ao criar chamado", "detalhe": "..."} com o status code do GLPI.  
-  * **500 Internal Server Error:** {"erro": "Erro interno", "detalhe": "..."} para erros não tratados na aplicação Flask.
+> ⚠️ O CNPJ deve estar cadastrado na entidade no campo personalizado.
 
-## **🐳 Docker (Opcional, para Deploy)**
+* **Resposta esperada:**
 
-Para implantar esta aplicação em um ambiente de produção ou de forma mais isolada, você pode usar Docker.
+```json
+{ "ticket_id": 1234 }
+```
 
-1. **Crie um arquivo Dockerfile na raiz do projeto:**  
-   \# Use uma imagem base Python  
-   FROM python:3.9-slim-buster
+* **Possíveis Erros:**
 
-   \# Define o diretório de trabalho dentro do contêiner  
-   WORKDIR /app
+  * `400 Bad Request`: Campos ausentes
+  * `401 Unauthorized`: Tokens incorretos
+  * `404 Not Found`: CNPJ não encontrado
+  * `500 Internal Server Error`: Erro não tratado
 
-   \# Copia o arquivo de requisitos e instala as dependências  
-   COPY requirements.txt .  
-   RUN pip install \--no-cache-dir \-r requirements.txt
+## **🐳 Docker (Opcional)**
 
-   \# Copia o restante do código da aplicação para o contêiner  
-   COPY . .
+### Dockerfile
 
-   \# Expõe a porta em que o Flask rodará  
-   EXPOSE 5000
+```dockerfile
+FROM python:3.9-slim-buster
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+COPY . .
+EXPOSE 5000
+CMD ["python", "app.py"]
+```
 
-   \# Comando para rodar a aplicação Flask  
-   \# Use um servidor WSGI como Gunicorn para produção:  
-   \# RUN pip install gunicorn  
-   \# CMD \["gunicorn", "--bind", "0.0.0.0:5000", "app:app"\]  
-   \# Ou para desenvolvimento:  
-   CMD \["python", "app.py"\]
+### requirements.txt
 
-2. **Crie um arquivo requirements.txt na raiz do projeto:**  
-   Flask  
-   requests  
-   gunicorn \# Adicione se for usar Gunicorn para produção
+```
+Flask
+requests
+gunicorn
+```
 
-3. **Construa a imagem Docker:**  
-   docker build \-t glpi-integration-app .
+### Comandos
 
-4. **Execute o contêiner Docker:**  
-   docker run \-p 5000:5000 glpi-integration-app
-
-   Sua aplicação estará acessível em http://localhost:5000.
+```bash
+docker build -t glpi-integration-app .
+docker run -p 5000:5000 glpi-integration-app
+```
 
 ## **🤝 Contribuição**
 
-Contribuições são bem-vindas\! Se você tiver sugestões, melhorias ou encontrar bugs, sinta-se à vontade para:
+Contribuições são bem-vindas! Se você tiver sugestões, melhorias ou encontrar bugs:
 
-1. Abrir uma [Issue](https://github.com/JEAN-ALMEIDA-CZO/glpiapicustom/issues)  
-2. Criar um [Pull Request](https://github.com/JEAN-ALMEIDA-CZO/glpiapicustom/pulls)
+* [Abrir uma Issue](https://github.com/JEAN-ALMEIDA-CZO/glpiapicustom/issues)
+* [Criar um Pull Request](https://github.com/JEAN-ALMEIDA-CZO/glpiapicustom/pulls)
 
 ## **📄 Licença**
 
